@@ -133,7 +133,10 @@ export function useHandTracking({
   const processFrameViaHttp = async (base64Image) => {
     isRequestInProgressRef.current = true;
     try {
-      const response = await fetch('/api/v1/tracking/process-frame', {
+      const backendBase = (typeof process !== 'undefined' && process.env?.BACKEND_URL)
+        || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BACKEND_URL)
+        || '';
+      const response = await fetch(`${backendBase}/api/v1/tracking/process-frame`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

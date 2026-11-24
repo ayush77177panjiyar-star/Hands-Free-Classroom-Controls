@@ -1,4 +1,8 @@
-const API_BASE = '/api/v1';
+const BACKEND_BASE = (typeof process !== 'undefined' && process.env?.BACKEND_URL)
+  || (typeof import.meta !== 'undefined' && import.meta.env?.VITE_BACKEND_URL)
+  || '';
+
+const API_BASE = `${BACKEND_BASE}/api/v1`;
 
 async function request(endpoint, options = {}) {
   try {
@@ -22,10 +26,10 @@ async function request(endpoint, options = {}) {
 export const api = {
   async checkHealth() {
     try {
-      const res = await fetch('/api/v1/health');
+      const res = await fetch(`${BACKEND_BASE}/api/v1/health`);
       if (res.ok) return await res.json();
       // fallback to top-level health
-      const topRes = await fetch('/api/health');
+      const topRes = await fetch(`${BACKEND_BASE}/api/health`);
       if (topRes.ok) return await topRes.json();
       throw new Error('Health check responded with non-200');
     } catch (e) {
