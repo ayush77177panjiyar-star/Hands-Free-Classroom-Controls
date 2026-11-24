@@ -22,10 +22,12 @@ import HandTracking from '../components/HandTracking';
 import Webcam from '../components/Webcam';
 import { useWebcam } from '../hooks/useWebcam';
 import { useVirtualCursor } from '../hooks/useVirtualCursor';
+import { useHandTracking } from '../hooks/useHandTracking';
 import { api } from '../services/api';
 import { cn } from '../utils/helpers';
 
 const QUESTIONS = [
+
   {
     id: 1,
     type: 'quiz',
@@ -106,6 +108,27 @@ export default function ClassroomPage() {
       handleDwellClick(targetId);
     },
   });
+
+  // Real-time Python MediaPipe Hand Tracking Hook
+  const tracking = useHandTracking({
+    videoRef: webcam.videoRef,
+    isActive: webcam.isActive,
+    onGestureDetected: (gesture) => {
+      if (gesture === 'Swipe Right') {
+        handleNext();
+      } else if (gesture === 'Swipe Left') {
+        handlePrev();
+      }
+    },
+  });
+
+  // Continuously drive virtual cursor using detected hand coordinates
+  useEffect(() => {
+    if (tracking.hands.length > 0 && tracking.cursorPosition) {
+      cursor.setPosition(tracking.cursorPosition);
+    }
+  }, [tracking.cursorPosition, tracking.hands.length]);
+
 
   const addToast = (title, message, type = 'info') => {
     const id = Date.now();
@@ -531,11 +554,13 @@ export default function ClassroomPage() {
                 showControls={false}
                 overlayChildren={
                   <HandTracking
-                    handPosition={{ x: cursor.position.x, y: cursor.position.y }}
-                    isDetected={webcam.isActive}
-                    gestureName={cursor.isHovering ? 'Hover Click' : 'Pointing Cursor'}
-                    confidence={0.96}
+                    hands={tracking.hands}
+                    activeGesture={tracking.activeGesture}
+                    gestureConfidence={tracking.gestureConfidence}
+                    latencyMs={tracking.latencyMs}
+                    connectionMode={tracking.connectionMode}
                     showRestingZone={false}
+                    isMirror={webcam.isMirror}
                   />
                 }
               />
@@ -554,15 +579,18 @@ export default function ClassroomPage() {
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Detected Posture</span>
                 <span className="font-semibold text-emerald-400 flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-400" />
-                  {cursor.isHovering ? 'Dwell Charging...' : 'Active Pointing'}
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  {tracking.activeGesture}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs">
                 <span className="text-slate-400">Confidence</span>
-                <span className="font-mono text-indigo-300 font-bold">96.8%</span>
+                <span className="font-mono text-indigo-300 font-bold">
+                  {Math.round(tracking.gestureConfidence * 100)}%
+                </span>
               </div>
             </div>
+
 
             {/* Gesture Quick Guide */}
             <div className="space-y-2 pt-1 text-xs">

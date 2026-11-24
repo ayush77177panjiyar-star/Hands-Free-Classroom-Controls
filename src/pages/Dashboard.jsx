@@ -18,6 +18,7 @@ import StatCard from '../components/StatCard';
 import Webcam from '../components/Webcam';
 import HandTracking from '../components/HandTracking';
 import { useWebcam } from '../hooks/useWebcam';
+import { useHandTracking } from '../hooks/useHandTracking';
 import { api } from '../services/api';
 import { cn } from '../utils/helpers';
 
@@ -27,6 +28,14 @@ export default function Dashboard() {
   const [sessions, setSessions] = useState([]);
   const [calibrationProfile, setCalibrationProfile] = useState(null);
   const [loading, setLoading] = useState(true);
+
+  // Live Python MediaPipe tracking
+  const tracking = useHandTracking({
+    videoRef: webcam.videoRef,
+    isActive: webcam.isActive,
+    preferredHand: calibrationProfile?.preferred_hand || 'right',
+  });
+
 
   useEffect(() => {
     async function loadDashboardData() {
@@ -184,13 +193,17 @@ export default function Dashboard() {
               onStop={webcam.stopStream}
               overlayChildren={
                 <HandTracking
-                  handPosition={{ x: 50, y: 45 }}
-                  isDetected={webcam.isActive}
-                  handSide={calibrationProfile?.preferred_hand === 'left' ? 'Left' : 'Right'}
-                  gestureName="Pointing Ready"
-                  confidence={0.96}
+                  hands={tracking.hands}
+                  activeGesture={tracking.activeGesture}
+                  gestureConfidence={tracking.gestureConfidence}
+                  latencyMs={tracking.latencyMs}
+                  connectionMode={tracking.connectionMode}
+                  showRestingZone={true}
+                  restingZone={{ x_min: 0.25, y_min: 0.25, x_max: 0.75, y_max: 0.75 }}
+                  isMirror={webcam.isMirror}
                 />
               }
+
             />
           </div>
 

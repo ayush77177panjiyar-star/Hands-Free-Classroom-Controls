@@ -26,6 +26,8 @@ export function useWebcam(options = {}) {
     }
   }, [selectedDeviceId]);
 
+  const streamRef = useRef(null);
+
   const startStream = useCallback(async (deviceId = selectedDeviceId) => {
     setError(null);
     try {
@@ -34,8 +36,8 @@ export function useWebcam(options = {}) {
       }
 
       // Stop any existing tracks
-      if (stream) {
-        stream.getTracks().forEach((track) => track.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
       }
 
       const constraints = {
@@ -46,6 +48,7 @@ export function useWebcam(options = {}) {
       };
 
       const newStream = await navigator.mediaDevices.getUserMedia(constraints);
+      streamRef.current = newStream;
       setStream(newStream);
       setHasPermission(true);
       setIsActive(true);
@@ -60,29 +63,32 @@ export function useWebcam(options = {}) {
       setHasPermission(false);
       setIsActive(false);
     }
-  }, [selectedDeviceId, stream, refreshDevices]);
+  }, [selectedDeviceId, refreshDevices]);
 
   const stopStream = useCallback(() => {
-    if (stream) {
-      stream.getTracks().forEach((t) => t.stop());
-      setStream(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
     }
+    setStream(null);
     if (videoRef.current) {
       videoRef.current.srcObject = null;
     }
     setIsActive(false);
-  }, [stream]);
+  }, []);
 
   useEffect(() => {
     if (autoStart) {
       startStream();
     }
     return () => {
-      if (stream) {
-        stream.getTracks().forEach((t) => t.stop());
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current = null;
       }
     };
-  }, []);
+  }, [autoStart, startStream]);
+
 
   return {
     videoRef,

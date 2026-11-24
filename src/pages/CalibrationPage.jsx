@@ -16,6 +16,7 @@ import Webcam from '../components/Webcam';
 import HandTracking from '../components/HandTracking';
 import Feedback from '../components/Feedback';
 import { useWebcam } from '../hooks/useWebcam';
+import { useHandTracking } from '../hooks/useHandTracking';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { api } from '../services/api';
 import { cn } from '../utils/helpers';
@@ -25,25 +26,25 @@ const CALIBRATION_STEPS = [
     id: 1,
     title: 'Resting Hand Position',
     instruction: 'Keep your dominant hand comfortably open inside the dashed interaction zone for 3 seconds.',
-    gestureTarget: 'Resting Position',
+    gestureTarget: 'Resting',
   },
   {
     id: 2,
     title: 'Pinch to Select',
     instruction: 'Bring your thumb and index fingertip together firmly to trigger a click.',
-    gestureTarget: 'Pinch Gesture',
+    gestureTarget: 'Pinch',
   },
   {
     id: 3,
     title: 'Swipe Navigation',
     instruction: 'Wave your open hand swiftly left and right across the camera to test slide transitions.',
-    gestureTarget: 'Swipe Gesture',
+    gestureTarget: 'Swipe Right',
   },
   {
     id: 4,
     title: 'Open Palm Pause',
     instruction: 'Hold up an open palm facing the webcam to verify the menu freeze gesture.',
-    gestureTarget: 'Palm Pause',
+    gestureTarget: 'Open Palm',
   },
 ];
 
@@ -55,6 +56,24 @@ export default function CalibrationPage() {
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [toasts, setToasts] = useState([]);
   const [isSaved, setIsSaved] = useState(false);
+
+  // Live Python MediaPipe Hand Tracking Hook
+  const tracking = useHandTracking({
+    videoRef: webcam.videoRef,
+    isActive: webcam.isActive,
+    preferredHand: preferredHand,
+    onGestureDetected: (gesture, conf) => {
+      const stepTarget = CALIBRATION_STEPS[currentStep - 1]?.gestureTarget;
+      if (
+        stepTarget &&
+        (gesture === stepTarget ||
+          (stepTarget.startsWith('Swipe') && gesture.startsWith('Swipe')))
+      ) {
+        addToast('Gesture Verified!', `Live detection: ${gesture} (${Math.round(conf * 100)}%)`, 'success');
+      }
+    },
+  });
+
 
   // Sensitivity Sliders
   const [sensitivity, setSensitivity] = useLocalStorage('gesture_sensitivity', {
@@ -194,14 +213,17 @@ export default function CalibrationPage() {
               onStop={webcam.stopStream}
               overlayChildren={
                 <HandTracking
-                  handPosition={{ x: 50, y: 46 }}
-                  isDetected={webcam.isActive}
-                  handSide={preferredHand === 'left' ? 'Left' : 'Right'}
-                  gestureName={CALIBRATION_STEPS[currentStep - 1].gestureTarget}
-                  confidence={0.97}
+                  hands={tracking.hands}
+                  activeGesture={tracking.activeGesture}
+                  gestureConfidence={tracking.gestureConfidence}
+                  latencyMs={tracking.latencyMs}
+                  connectionMode={tracking.connectionMode}
                   showRestingZone={true}
+                  restingZone={{ x_min: 0.25, y_min: 0.25, x_max: 0.75, y_max: 0.75 }}
+                  isMirror={webcam.isMirror}
                 />
               }
+
             />
 
             {/* Step Action & Instruction Card */}

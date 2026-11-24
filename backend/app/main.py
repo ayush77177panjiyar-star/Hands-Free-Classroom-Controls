@@ -10,10 +10,11 @@ from backend.app.api.v1.api import api_router
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # Startup initialization
-    print(f"🚀 Starting {settings.PROJECT_NAME} v{settings.VERSION}")
+    print(f"[STARTUP] Starting {settings.PROJECT_NAME} v{settings.VERSION}")
     yield
     # Shutdown cleanup
-    print(f"🛑 Shutting down {settings.PROJECT_NAME}")
+    print(f"[SHUTDOWN] Shutting down {settings.PROJECT_NAME}")
+
 
 
 app = FastAPI(

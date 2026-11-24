@@ -72,4 +72,16 @@ export const api = {
   async getComparativeBenchmark() {
     return request('/analytics/comparison');
   },
+
+  async getTrackingStatus() {
+    return request('/tracking/status');
+  },
+
+  async processFrame(payload) {
+    return request('/tracking/process-frame', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
 };
+
