@@ -35,9 +35,13 @@ class HandDetectionResult(BaseModel):
     gesture_confidence: float = 0.90
 
 
+from backend.app.schemas.gesture import IntentValidationResult
+
+
 class FrameProcessRequest(BaseModel):
     image: str = Field(..., description="Base64 encoded JPEG or PNG image string or data URI")
     session_id: Optional[str] = "default_session"
+    student_id: Optional[str] = "student_a"
     client_timestamp_ms: Optional[int] = None
     preferred_hand: Optional[str] = "right"
     smoothing_factor: Optional[float] = 0.65
@@ -51,8 +55,10 @@ class FrameProcessResponse(BaseModel):
     gesture_confidence: float = 0.0
     cursor_position: CursorCoordinate = Field(default_factory=CursorCoordinate)
     is_resting: bool = False
+    intent_validation: Optional[IntentValidationResult] = None
     processing_time_ms: float = 0.0
     error: Optional[str] = None
+
 
 
 class TrackingStatus(BaseModel):

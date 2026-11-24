@@ -97,7 +97,7 @@ def generate_mock_landmarks(gesture_type: str) -> list[LandmarkPoint]:
     return lm
 
 
-def run_tests():
+def test_tracking_and_gesture_detection():
     print("[TEST] Running MediaPipe and Gesture Detection Test Suite...")
 
     # 1. Test Geometric Gesture Classification
@@ -149,11 +149,7 @@ def run_tests():
     assert post_res.json()["success"] is True
 
     print("\n[SUCCESS] ALL MEDIAPIPE AND TRACKING TESTS PASSED PERFECTLY!")
-    return True
-
 
 
 if __name__ == "__main__":
-    success = run_tests()
-    if not success:
-        sys.exit(1)
+    test_tracking_and_gesture_detection()

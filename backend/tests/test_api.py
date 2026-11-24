@@ -52,10 +52,9 @@ def test_endpoints():
         assert sess_res.status_code == 200
 
         print("\n ALL FASTAPI ENDPOINTS PASSED VERIFICATION SUCCESSFULLY!")
-        return True
     except Exception as e:
         print(f"Error testing endpoints: {e}")
-        return False
+        raise e
 
 if __name__ == "__main__":
     success = test_endpoints()

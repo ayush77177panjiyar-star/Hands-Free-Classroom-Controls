@@ -83,5 +83,39 @@ export const api = {
       body: JSON.stringify(payload),
     });
   },
+
+  async submitCalibrationSample(studentId, sample) {
+    return request('/calibration/sample', {
+      method: 'POST',
+      body: JSON.stringify({
+        student_id: studentId,
+        sample: sample,
+      }),
+    });
+  },
+
+  async calculateAdaptiveThresholds(studentId, preferredHand = 'right') {
+    return request('/calibration/calculate', {
+      method: 'POST',
+      body: JSON.stringify({
+        student_id: studentId,
+        preferred_hand: preferredHand,
+      }),
+    });
+  },
+
+  async getStudentProfile(profileId = 'student_a') {
+    return request(`/calibration/profile/${profileId}`);
+  },
+
+  async getGestureTelemetry(studentId = 'student_a') {
+    return request(`/gestures/telemetry/${studentId}`);
+  },
+
+  async resetGestureSession(studentId = 'student_a') {
+    return request(`/gestures/reset-session/${studentId}`, {
+      method: 'POST',
+    });
+  },
 };
 

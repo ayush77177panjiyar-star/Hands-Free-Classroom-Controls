@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   FlaskConical,
   Users,
@@ -10,6 +10,9 @@ import {
   RotateCcw,
   CheckCircle2,
   TrendingUp,
+  ShieldCheck,
+  Activity,
+  Layers,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -23,6 +26,7 @@ import {
 } from 'recharts';
 import StatCard from '../components/StatCard';
 import Feedback from '../components/Feedback';
+import { api } from '../services/api';
 import { cn } from '../utils/helpers';
 
 const COMPARISON_CHART_DATA = [
@@ -40,6 +44,11 @@ export default function TestingPage() {
   const [targetPos, setTargetPos] = useState({ top: '40%', left: '45%' });
   const [toasts, setToasts] = useState([]);
 
+  const [profileA, setProfileA] = useState(null);
+  const [profileB, setProfileB] = useState(null);
+  const [telemetryA, setTelemetryA] = useState(null);
+  const [telemetryB, setTelemetryB] = useState(null);
+
   const addToast = (title, message, type = 'info') => {
     const id = Date.now();
     setToasts((prev) => [...prev, { id, title, message, type }]);
@@ -47,6 +56,28 @@ export default function TestingPage() {
       setToasts((prev) => prev.filter((t) => t.id !== id));
     }, 3500);
   };
+
+  // Fetch real profiles from backend
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const [pA, pB, tA, tB] = await Promise.all([
+          api.getStudentProfile('student_a').catch(() => null),
+          api.getStudentProfile('student_b').catch(() => null),
+          api.getGestureTelemetry('student_a').catch(() => null),
+          api.getGestureTelemetry('student_b').catch(() => null),
+        ]);
+
+        if (pA?.success) setProfileA(pA.data);
+        if (pB?.success) setProfileB(pB.data);
+        if (tA?.success) setTelemetryA(tA.data);
+        if (tB?.success) setTelemetryB(tB.data);
+      } catch (e) {
+        console.warn('Failed to fetch benchmark profiles:', e);
+      }
+    }
+    loadData();
+  }, []);
 
   // Interactive Reaction Benchmark
   const startReactionTest = () => {
@@ -97,7 +128,7 @@ export default function TestingPage() {
 
         <div className="flex items-center gap-2">
           <span className="px-3 py-1 rounded-full text-xs font-semibold bg-indigo-500/10 text-indigo-300 border border-indigo-500/20">
-            A/B Comparative Benchmark Mode
+            Phase 3 Intelligent Engine Active
           </span>
         </div>
       </div>
@@ -117,29 +148,50 @@ export default function TestingPage() {
               </div>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
-              96.4% Accuracy
+              {profileA?.calibration_quality_score || 96}% Quality Score
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">Avg. Latency</p>
-              <p className="text-base font-bold text-white mt-0.5">205 ms</p>
+              <p className="text-[10px] text-slate-400 uppercase">Pinch Cutoff</p>
+              <p className="text-base font-bold text-white mt-0.5">
+                {(profileA?.adaptive_thresholds?.pinch_threshold || 0.052).toFixed(3)}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">False Triggers</p>
-              <p className="text-base font-bold text-emerald-400 mt-0.5">1.9%</p>
+              <p className="text-[10px] text-slate-400 uppercase">Rest Deadzone</p>
+              <p className="text-base font-bold text-emerald-400 mt-0.5">
+                {(profileA?.adaptive_thresholds?.movement_deadzone || 0.018).toFixed(3)}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">Calibration</p>
-              <p className="text-base font-bold text-indigo-400 mt-0.5">94 / 100</p>
+              <p className="text-[10px] text-slate-400 uppercase">Cooldown</p>
+              <p className="text-base font-bold text-indigo-400 mt-0.5">
+                {profileA?.adaptive_thresholds?.cooldown_duration_ms || 700} ms
+              </p>
             </div>
           </div>
 
-          <div className="text-xs text-slate-400 space-y-1 pt-1">
-            <p>• Resting Zone: 25% margin standard</p>
-            <p>• Dwell Timer: 700 ms (Medium)</p>
-            <p>• Smoothing Factor: 0.65</p>
+          <div className="text-xs text-slate-400 space-y-1.5 pt-1">
+            <p className="flex justify-between">
+              <span>Resting Jitter Cutoff:</span>
+              <span className="font-mono text-slate-300">
+                {(profileA?.adaptive_thresholds?.resting_jitter_threshold || 0.00085).toFixed(5)}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span>Swipe Min Velocity:</span>
+              <span className="font-mono text-slate-300">
+                {(profileA?.adaptive_thresholds?.swipe_min_velocity || 0.50).toFixed(2)} /s
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span>Dwell Selection Time:</span>
+              <span className="font-mono text-slate-300">
+                {profileA?.adaptive_thresholds?.dwell_time_ms || 700} ms
+              </span>
+            </p>
           </div>
         </div>
 
@@ -156,29 +208,50 @@ export default function TestingPage() {
               </div>
             </div>
             <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-              93.1% Accuracy
+              {profileB?.calibration_quality_score || 91}% Quality Score
             </span>
           </div>
 
           <div className="grid grid-cols-3 gap-3 pt-2">
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">Avg. Latency</p>
-              <p className="text-base font-bold text-white mt-0.5">248 ms</p>
+              <p className="text-[10px] text-slate-400 uppercase">Pinch Cutoff</p>
+              <p className="text-base font-bold text-white mt-0.5">
+                {(profileB?.adaptive_thresholds?.pinch_threshold || 0.046).toFixed(3)}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">False Triggers</p>
-              <p className="text-base font-bold text-amber-400 mt-0.5">3.8%</p>
+              <p className="text-[10px] text-slate-400 uppercase">Rest Deadzone</p>
+              <p className="text-base font-bold text-emerald-400 mt-0.5">
+                {(profileB?.adaptive_thresholds?.movement_deadzone || 0.024).toFixed(3)}
+              </p>
             </div>
             <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-center">
-              <p className="text-[10px] text-slate-400 uppercase">Calibration</p>
-              <p className="text-base font-bold text-violet-400 mt-0.5">89 / 100</p>
+              <p className="text-[10px] text-slate-400 uppercase">Cooldown</p>
+              <p className="text-base font-bold text-violet-400 mt-0.5">
+                {profileB?.adaptive_thresholds?.cooldown_duration_ms || 750} ms
+              </p>
             </div>
           </div>
 
-          <div className="text-xs text-slate-400 space-y-1 pt-1">
-            <p>• Resting Zone: 20% margin widened</p>
-            <p>• Dwell Timer: 850 ms (Stabilized)</p>
-            <p>• Smoothing Factor: 0.75 (Higher filter)</p>
+          <div className="text-xs text-slate-400 space-y-1.5 pt-1">
+            <p className="flex justify-between">
+              <span>Resting Jitter Cutoff:</span>
+              <span className="font-mono text-slate-300">
+                {(profileB?.adaptive_thresholds?.resting_jitter_threshold || 0.00095).toFixed(5)}
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span>Swipe Min Velocity:</span>
+              <span className="font-mono text-slate-300">
+                {(profileB?.adaptive_thresholds?.swipe_min_velocity || 0.45).toFixed(2)} /s
+              </span>
+            </p>
+            <p className="flex justify-between">
+              <span>Dwell Selection Time:</span>
+              <span className="font-mono text-slate-300">
+                {profileB?.adaptive_thresholds?.dwell_time_ms || 850} ms
+              </span>
+            </p>
           </div>
         </div>
       </div>
@@ -187,8 +260,8 @@ export default function TestingPage() {
       <div className="glass-card rounded-2xl p-6 border border-slate-800 space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-white">A/B Performance Metric Comparison</h3>
-            <p className="text-xs text-slate-400">Side-by-side benchmark comparison for Alex vs Jordan</p>
+            <h3 className="text-sm font-bold text-white">A/B Kinematic Performance Benchmark</h3>
+            <p className="text-xs text-slate-400">Comparing Student A (Alex) and Student B (Jordan) under identical lighting</p>
           </div>
         </div>
 
@@ -312,7 +385,7 @@ export default function TestingPage() {
         </div>
       </div>
 
-      <Feedback toasts={toasts} onDismiss={(id) => setToasts(toasts.filter((t) => t.id !== id))} />
+      <Feedback toasts={toasts} onDismiss={(id) => setToasts((prev) => prev.filter((t) => t.id !== id))} />
     </div>
   );
 }

@@ -18,8 +18,10 @@ export function useHandTracking({
   isActive = false,
   targetFps = 20,
   preferredHand = 'right',
+  studentId = 'student_a',
   smoothingFactor = 0.65,
   onGestureDetected = null,
+  onCommandValidated = null,
 } = {}) {
   const [hands, setHands] = useState([]);
   const [activeGesture, setActiveGesture] = useState('Resting');
@@ -28,6 +30,15 @@ export function useHandTracking({
   const [latencyMs, setLatencyMs] = useState(0);
   const [connectionMode, setConnectionMode] = useState('idle'); // 'websocket' | 'http' | 'idle'
   const [isProcessing, setIsProcessing] = useState(false);
+  const [intentValidation, setIntentValidation] = useState({
+    state: 'IDLE',
+    validated_command: 'NO_COMMAND',
+    rejection_reason: null,
+    cooldown_remaining_ms: 0,
+    confidence: 0,
+    candidate_gesture: 'Resting',
+    execution_data: {},
+  });
 
   const canvasRef = useRef(null);
   const wsRef = useRef(null);
@@ -100,6 +111,17 @@ export function useHandTracking({
       });
     }
 
+    if (res.intent_validation) {
+      setIntentValidation(res.intent_validation);
+      if (
+        onCommandValidated &&
+        res.intent_validation.validated_command &&
+        res.intent_validation.validated_command !== 'NO_COMMAND'
+      ) {
+        onCommandValidated(res.intent_validation);
+      }
+    }
+
     // Trigger callback on gesture transition
     if (onGestureDetected && res.active_gesture && res.active_gesture !== lastGestureRef.current) {
       onGestureDetected(res.active_gesture, res.gesture_confidence);
@@ -117,6 +139,7 @@ export function useHandTracking({
         body: JSON.stringify({
           image: base64Image,
           session_id: 'browser_session',
+          student_id: studentId,
           client_timestamp_ms: Date.now(),
           preferred_hand: preferredHand,
           smoothing_factor: smoothingFactor,
@@ -163,6 +186,7 @@ export function useHandTracking({
         JSON.stringify({
           image: base64Image,
           session_id: 'ws_browser_session',
+          student_id: studentId,
           client_timestamp_ms: Date.now(),
           preferred_hand: preferredHand,
           smoothing_factor: smoothingFactor,
@@ -171,7 +195,7 @@ export function useHandTracking({
     } else {
       processFrameViaHttp(base64Image);
     }
-  }, [videoRef, preferredHand, smoothingFactor]);
+  }, [videoRef, preferredHand, studentId, smoothingFactor]);
 
   // Frame processing loop
   useEffect(() => {
@@ -209,6 +233,7 @@ export function useHandTracking({
     latencyMs,
     connectionMode,
     isProcessing,
+    intentValidation,
     skeletonConnections: SKELETON_CONNECTIONS,
   };
 }
