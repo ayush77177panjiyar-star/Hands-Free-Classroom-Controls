@@ -22,9 +22,10 @@ async def process_frame_endpoint(request: FrameProcessRequest):
         response = frame_processor.process_frame(request)
         return response
     except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Frame processing error: {str(e)}",
+        return FrameProcessResponse(
+            success=False,
+            error=f"Frame processing error: {str(e)}",
+            processing_time_ms=0.0,
         )
 
 
@@ -40,9 +41,10 @@ async def get_tracking_status():
             frame_processor.total_latency_ms / frame_processor.total_frames_processed, 2
         )
 
+    is_loaded = mediapipe_service.is_ready()
     return TrackingStatus(
-        status="ready",
-        model_loaded=mediapipe_service.landmarker is not None,
+        status="ready" if is_loaded else "standby",
+        model_loaded=is_loaded,
         model_name="MediaPipe Hand Landmarker Tasks API",
         max_hands=2,
         total_frames_processed=frame_processor.total_frames_processed,

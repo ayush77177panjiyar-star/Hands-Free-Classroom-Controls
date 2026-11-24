@@ -63,6 +63,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 # Top level convenience alias for /api/health and /
 @app.get("/", tags=["Root"])
+@app.get("/api", tags=["Root"])
+@app.get("/api/", tags=["Root"])
 async def root():
     return {
         "service": settings.PROJECT_NAME,
@@ -73,6 +75,7 @@ async def root():
 
 
 @app.get("/api/health", tags=["Health & Status"])
+@app.get("/health", tags=["Health & Status"])
 async def top_level_health():
     return {
         "status": "healthy",

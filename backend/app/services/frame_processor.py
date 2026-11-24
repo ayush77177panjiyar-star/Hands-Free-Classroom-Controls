@@ -48,8 +48,16 @@ class FrameProcessor:
                     processing_time_ms=0.0,
                 )
 
-            # Downscale if width > 640 for rapid inference
+            # Check minimum dimensions
             h, w = bgr_image.shape[:2]
+            if h < 32 or w < 32:
+                return FrameProcessResponse(
+                    success=False,
+                    error="Image dimensions too small (minimum 32x32 required)",
+                    processing_time_ms=round((time.time() - start_time) * 1000, 2),
+                )
+
+            # Downscale if width > 640 for rapid inference
             if w > 640:
                 scale = 640.0 / w
                 new_w, new_h = 640, int(h * scale)
